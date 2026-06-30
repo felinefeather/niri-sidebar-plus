@@ -15,25 +15,28 @@ pub fn toggle_window<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
         remove_from_sidebar(ctx, &focused)?;
     } else {
         // Auto-recall deployed windows before adding a new one
-        if ctx.config.interaction.sticky && ctx.state.sent_workspace.is_some()
-            && let Some(ref sw) = ctx.state.sent_workspace.clone() {
-                let target = if let Some(i) = sw.index {
-                    WorkspaceReferenceArg::Index(i)
-                } else if let Some(n) = sw.name.clone() {
-                    WorkspaceReferenceArg::Name(n)
-                } else {
-                    return Ok(());
-                };
-                crate::commands::send_toggle(ctx, target, true)?;
-            }
+        if ctx.config.interaction.sticky
+            && ctx.state.sent_workspace.is_some()
+            && let Some(ref sw) = ctx.state.sent_workspace.clone()
+        {
+            let target = if let Some(i) = sw.index {
+                WorkspaceReferenceArg::Index(i)
+            } else if let Some(n) = sw.name.clone() {
+                WorkspaceReferenceArg::Name(n)
+            } else {
+                return Ok(());
+            };
+            crate::commands::send_toggle(ctx, target, true)?;
+        }
         add_to_sidebar(ctx, &focused)?;
         if ctx.config.interaction.auto_defocus
             && let Ok(windows) = ctx.socket.get_windows()
-                && let Some(tiled) = windows.iter().find(|w| {
-                    !w.is_floating && w.workspace_id == focused.workspace_id && w.id != focused.id
-                }) {
-                    let _ = ctx.socket.send_action(Action::FocusWindow { id: tiled.id });
-                }
+            && let Some(tiled) = windows.iter().find(|w| {
+                !w.is_floating && w.workspace_id == focused.workspace_id && w.id != focused.id
+            })
+        {
+            let _ = ctx.socket.send_action(Action::FocusWindow { id: tiled.id });
+        }
     }
 
     save_state(&ctx.state, &ctx.cache_dir)?;
@@ -79,12 +82,13 @@ pub fn add_to_sidebar<C: NiriClient>(ctx: &mut Ctx<C>, window: &Window) -> Resul
     // Wait for resize to settle so reorder() gets correct actual size for align
     for _ in 0..50 {
         if let Ok(windows) = ctx.socket.get_windows()
-            && let Some(w) = windows.iter().find(|w| w.id == window.id) {
-                let (aw, ah) = w.layout.window_size;
-                if aw == target_width && ah == target_height {
-                    break;
-                }
+            && let Some(w) = windows.iter().find(|w| w.id == window.id)
+        {
+            let (aw, ah) = w.layout.window_size;
+            if aw == target_width && ah == target_height {
+                break;
             }
+        }
         std::thread::sleep(std::time::Duration::from_millis(10));
     }
 

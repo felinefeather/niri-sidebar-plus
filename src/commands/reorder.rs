@@ -151,10 +151,6 @@ fn calculate_coordinates<C: NiriClient>(
         GapMode::Dynamic => ah,
         GapMode::Static => h,
     };
-    let pos_w = match gap_mode {
-        GapMode::Dynamic => aw,
-        GapMode::Static => w,
-    };
 
     match pos {
         SidebarPosition::Right => {
@@ -227,8 +223,6 @@ fn calculate_coordinates<C: NiriClient>(
 pub fn reorder<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
     let display_w;
     let display_h;
-    
-    
 
     let sidebar_ids: Vec<u64> = ctx.state.windows.iter().map(|w| w.id).collect();
 

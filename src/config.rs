@@ -49,7 +49,6 @@ impl fmt::Display for Align {
     }
 }
 
-
 impl Align {
     /// Whether the window's right edge (true) or left edge (false) anchors horizontally.
     pub fn is_right_aligned(self) -> bool {
@@ -79,7 +78,6 @@ pub enum GapMode {
     #[default]
     Dynamic,
 }
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Geometry {
@@ -194,12 +192,13 @@ pub fn load_config() -> Config {
     path.push("config.toml");
 
     if path.exists()
-        && let Ok(content) = fs::read_to_string(&path) {
-            match toml::from_str(&content) {
-                Ok(cfg) => return cfg,
-                Err(e) => eprintln!("Error parsing config.toml: {}. Using defaults.", e),
-            }
+        && let Ok(content) = fs::read_to_string(&path)
+    {
+        match toml::from_str(&content) {
+            Ok(cfg) => return cfg,
+            Err(e) => eprintln!("Error parsing config.toml: {}. Using defaults.", e),
         }
+    }
     Config::default()
 }
 
