@@ -1001,7 +1001,6 @@ mod tests {
         )));
         // Window 3 (Default, actual_h=200):
         // Previous Offset = 210 + actual_h2 + Gap = 210 + 200 + 10 = 420
-        // Y = ScreenH - config_h3 - MarginBottom - Offset
         // Y = 1080 - 200 - 0 - 420 = 460
         assert!(actions.iter().any(|a| matches!(a,
             Action::MoveFloatingWindow {
