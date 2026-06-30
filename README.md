@@ -39,6 +39,14 @@ top = 64.0
 bottom = -4.0
 ```
 
+### `gap_mode` — Stack Spacing
+Controls how windows stack: `dynamic` (default) uses each window's actual size + gap. `static` uses a fixed gap regardless of height, for a card-stack look.
+
+```toml
+[geometry]
+gap_mode = "dynamic"  # or "static"
+```
+
 ### `auto_defocus` — Auto-Defocus
 When enabled, pressing `Mod+S` adds a window to the sidebar then immediately returns focus to the tiled workspace.
 
