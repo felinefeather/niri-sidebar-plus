@@ -7,6 +7,7 @@ pub trait NiriClient {
     fn get_windows(&mut self) -> Result<Vec<Window>>;
     fn get_active_window(&mut self) -> Result<Window>;
     fn get_active_workspace(&mut self) -> Result<Workspace>;
+    fn get_workspaces(&mut self) -> Result<Vec<Workspace>>;
     fn get_screen_dimensions(&mut self) -> Result<(i32, i32)>;
     fn send_action(&mut self, action: Action) -> Result<Response>;
 }
@@ -28,6 +29,13 @@ impl NiriClient for Socket {
             Ok(Response::FocusedWindow(Some(window))) => Ok(window),
             Ok(Response::FocusedWindow(None)) => bail!("No window focused"),
             _ => bail!("Unexpected response from Niri when fetching windows"),
+        }
+    }
+
+    fn get_workspaces(&mut self) -> Result<Vec<Workspace>> {
+        match self.send(Request::Workspaces)? {
+            Ok(Response::Workspaces(workspaces)) => Ok(workspaces),
+            _ => bail!("Unexpected response from Niri when fetching workspaces"),
         }
     }
 

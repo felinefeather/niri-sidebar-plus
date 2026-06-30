@@ -49,6 +49,19 @@ impl NiriClient for MockNiri {
         })
     }
 
+    fn get_workspaces(&mut self) -> Result<Vec<Workspace>> {
+        Ok(vec![Workspace {
+            id: 1,
+            idx: 0,
+            name: Some("test".into()),
+            output: Some("eDP-1".into()),
+            is_urgent: false,
+            is_active: true,
+            is_focused: true,
+            active_window_id: None,
+        }])
+    }
+
     fn get_screen_dimensions(&mut self) -> Result<(i32, i32)> {
         Ok((1920, 1080))
     }

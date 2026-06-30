@@ -54,8 +54,14 @@ enum Commands {
         #[arg(short = 's', long)]
         sticky: bool,
     },
-    /// Recall all sidebar windows back to the current workspace (undoes send)
-    Recall,
+    /// Recall sidebar windows from a specific workspace (inverse of send).
+    /// Without args, recalls from ALL other workspaces.
+    Recall {
+        #[arg(short = 'i', long, group = "source")]
+        index: Option<u8>,
+        #[arg(short = 'n', long, group = "source")]
+        name: Option<String>,
+    },
     /// Generate a default config file if none exists
     Init,
     /// Run a daemon to listen for window close events
@@ -119,7 +125,14 @@ fn main() -> Result<()> {
             };
             commands::send_toggle(&mut ctx, target, sticky)?;
         }
-        Commands::Recall => commands::recall(&mut ctx)?,
+        Commands::Recall { index, name } => {
+            let source = match (index, name) {
+                (Some(i), _) => Some(WorkspaceReferenceArg::Index(i)),
+                (_, Some(n)) => Some(WorkspaceReferenceArg::Name(n)),
+                _ => None,
+            };
+            commands::recall(&mut ctx, source)?;
+        }
         Commands::Init => unreachable!(),
         Commands::Listen => commands::listen(ctx)?,
     }
