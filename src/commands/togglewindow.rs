@@ -4,7 +4,7 @@ use crate::niri::NiriClient;
 use crate::state::{WindowState, save_state};
 use crate::window_rules::resolve_window_size;
 use anyhow::{Context, Result};
-use niri_ipc::{Action, SizeChange, Window};
+use niri_ipc::{Action, SizeChange, Window, WorkspaceReferenceArg};
 
 pub fn toggle_window<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
     let focused = ctx.socket.get_active_window()?;
@@ -14,6 +14,19 @@ pub fn toggle_window<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
     if is_tracked {
         remove_from_sidebar(ctx, &focused)?;
     } else {
+        // Auto-recall deployed windows before adding a new one
+        if ctx.config.interaction.sticky && ctx.state.sent_workspace.is_some() {
+            if let Some(ref sw) = ctx.state.sent_workspace.clone() {
+                let target = if let Some(i) = sw.index {
+                    WorkspaceReferenceArg::Index(i)
+                } else if let Some(n) = sw.name.clone() {
+                    WorkspaceReferenceArg::Name(n)
+                } else {
+                    return Ok(());
+                };
+                crate::commands::send_toggle(ctx, target, true)?;
+            }
+        }
         add_to_sidebar(ctx, &focused)?;
         if ctx.config.interaction.auto_defocus {
             if let Ok(windows) = ctx.socket.get_windows() {

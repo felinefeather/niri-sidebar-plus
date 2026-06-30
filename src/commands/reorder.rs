@@ -38,6 +38,14 @@ fn clear_strut_file() -> Result<bool> {
     Ok(true)
 }
 
+pub fn clear_strut_file_if_active<C: NiriClient>(ctx: &mut Ctx<C>) -> anyhow::Result<()> {
+    if ctx.config.interaction.auto_fit.is_some() {
+        clear_strut_file()?;
+        let _ = ctx.socket.send_action(Action::LoadConfigFile { path: None });
+    }
+    Ok(())
+}
+
 fn resolve_dimensions<C: NiriClient>(window: &Window, ctx: &Ctx<C>) -> WindowTarget {
     let (width, height) = resolve_window_size(
         &ctx.config.window_rule,
