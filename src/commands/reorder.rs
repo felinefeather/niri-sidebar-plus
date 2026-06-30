@@ -40,7 +40,13 @@ fn clear_strut_file() -> Result<bool> {
 
 pub fn update_auto_fit<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
     if let Some(auto_fit) = &ctx.config.interaction.auto_fit {
-        let strut_active = !ctx.state.windows.is_empty() && ctx.state.is_hidden;
+        let current_ws = ctx.socket.get_active_workspace()?.id;
+        let windows = ctx.socket.get_windows()?;
+        let sidebar_ids: Vec<u64> = ctx.state.windows.iter().map(|w| w.id).collect();
+        let has_windows_on_ws = windows.iter().any(|w| {
+            w.is_floating && w.workspace_id == Some(current_ws) && sidebar_ids.contains(&w.id)
+        });
+        let strut_active = has_windows_on_ws && ctx.state.is_hidden;
         let strut_value = if strut_active { auto_fit.with_sidebar } else { auto_fit.without_sidebar };
         let wrote = if strut_value > 0 {
             write_strut_file(ctx.config.interaction.position, strut_value)?
