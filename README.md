@@ -19,8 +19,8 @@ align = "top-right"  # options: top-right, top-left, bottom-right, bottom-left
 - **`right`/`left`** — which horizontal edge anchors. Overflow goes to the opposite side (off-screen instead of into workspace).
 - **`top`/`bottom`** — stacking direction (top→bottom vs bottom→top).
 
-### `auto_fit` — Auto-Fit Struts
-Dynamically writes niri layout struts to reserve screen space. When the sidebar is **hidden** with windows, applies a strut to work around niri's 75px minimum-visible constraint.
+### `auto_fit` — Per-Workspace Struts
+Dynamically writes niri layout struts per active workspace. When the sidebar is **hidden** with windows on the **current** workspace, applies a strut.
 
 Requires one line in your niri config:
 
@@ -43,17 +43,19 @@ auto_defocus = true
 ```
 
 ### `send`, `send-toggle` & `recall` — Workspace Transfer
-Forcibly move all sidebar windows to a target workspace, ignoring `sticky`.
+Forcibly move all sidebar windows to a target workspace.
 
 ```bash
-niri-sidebar send -i 3            # send to workspace index 3
-niri-sidebar send -n chat         # send to workspace named "chat"
-niri-sidebar send-toggle -i 3     # toggle: first press sends, second recalls
-niri-sidebar send-toggle -i 3 -l  # same, but disable sticky while away
+niri-sidebar send -i 3            # one-way: send to workspace index 3
+niri-sidebar send -n chat         # one-way: send to workspace named "chat"
+niri-sidebar send-toggle -i 3     # toggle: sends if here, recalls if elsewhere
+niri-sidebar send-toggle -i 3 -s  # sticky mode: stateful with auto-recall on new window
 niri-sidebar recall               # bring all back to current workspace
 ```
 
-Bind `send-toggle` to a single key for push-to-talk style workspace dispatch.
+**Non-sticky** (default): presence-based. If sidebar windows are on the current workspace → send to target. If elsewhere → recall. No state persisted.
+
+**Sticky** (`-s`): stateful via `sent_workspace` in state.json. Deployed mode locks sticky (daemon won't pull windows back) and suspends auto-fit on the source workspace. Adding a new window while deployed auto-recalls first. Auto-detected when `sticky = true` in config — `-s` flag is then optional.
 
 ## Installation
 
