@@ -38,8 +38,15 @@ enum Commands {
         workspace: u64,
     },
     /// Forcibly move all sidebar windows to a target workspace, ignoring sticky.
-    /// Accepts either a numeric index or a workspace name.
     Send {
+        #[arg(short = 'i', long, group = "target")]
+        index: Option<u8>,
+        #[arg(short = 'n', long, group = "target")]
+        name: Option<String>,
+    },
+    /// Toggle sidebar windows between current workspace and a target workspace.
+    /// First press sends, second press recalls. Bind to a single key.
+    SendToggle {
         #[arg(short = 'i', long, group = "target")]
         index: Option<u8>,
         #[arg(short = 'n', long, group = "target")]
@@ -98,9 +105,17 @@ fn main() -> Result<()> {
             let target = match (index, name) {
                 (Some(i), _) => WorkspaceReferenceArg::Index(i),
                 (_, Some(n)) => WorkspaceReferenceArg::Name(n),
-                _ => unreachable!("clap group requires exactly one"),
+                _ => unreachable!(),
             };
             commands::send(&mut ctx, target)?;
+        }
+        Commands::SendToggle { index, name } => {
+            let target = match (index, name) {
+                (Some(i), _) => WorkspaceReferenceArg::Index(i),
+                (_, Some(n)) => WorkspaceReferenceArg::Name(n),
+                _ => unreachable!(),
+            };
+            commands::send_toggle(&mut ctx, target)?;
         }
         Commands::Recall => commands::recall(&mut ctx)?,
         Commands::Init => unreachable!(),

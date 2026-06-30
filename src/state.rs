@@ -12,6 +12,14 @@ pub struct AppState {
     pub is_hidden: bool,
     #[serde(default)]
     pub is_flipped: bool,
+    #[serde(default)]
+    pub sent_workspace: Option<SentWorkspace>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct SentWorkspace {
+    pub index: Option<u8>,
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -80,6 +88,7 @@ mod tests {
             ignored_windows: vec![100, 200],
             is_hidden: true,
             is_flipped: true,
+            sent_workspace: None,
         };
 
         save_state(&original_state, temp_dir.path()).expect("Failed to save state");

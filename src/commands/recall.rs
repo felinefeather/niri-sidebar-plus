@@ -13,7 +13,8 @@ pub fn recall<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
         .collect();
 
     if sidebar_windows.is_empty() {
-        anyhow::bail!("No sidebar windows on other workspaces to recall");
+        eprintln!("No sidebar windows on other workspaces to recall");
+        return Ok(());
     }
 
     for w in sidebar_windows {

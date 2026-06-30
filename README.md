@@ -42,6 +42,16 @@ When enabled, pressing `Mod+S` adds a window to the sidebar then immediately ret
 auto_defocus = true
 ```
 
+### `send` & `recall` — Force Workspace Transfer
+Forcibly move all sidebar windows to a target workspace, ignoring `sticky`.
+
+```bash
+niri-sidebar send -i 3      # send to workspace index 3
+niri-sidebar send -n chat   # send to workspace named "chat"
+niri-sidebar send -t -i 3   # toggle mode: first press sends, second press recalls
+niri-sidebar recall         # bring all sidebar windows back to current workspace
+```
+
 ## Installation
 
 ```bash

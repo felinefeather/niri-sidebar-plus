@@ -7,6 +7,7 @@ mod movefrom;
 mod recall;
 mod reorder;
 mod send;
+mod send_toggle;
 mod togglewindow;
 
 pub use close::close;
@@ -18,4 +19,5 @@ pub use movefrom::move_from;
 pub use recall::recall;
 pub use reorder::reorder;
 pub use send::send;
+pub use send_toggle::send_toggle;
 pub use togglewindow::toggle_window;

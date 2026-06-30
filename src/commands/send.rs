@@ -11,7 +11,8 @@ pub fn send<C: NiriClient>(ctx: &mut Ctx<C>, target: WorkspaceReferenceArg) -> R
         .collect();
 
     if sidebar_windows.is_empty() {
-        anyhow::bail!("No sidebar windows to send");
+        eprintln!("No sidebar windows to send");
+        return Ok(());
     }
 
     for w in sidebar_windows {
