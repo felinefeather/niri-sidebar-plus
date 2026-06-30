@@ -38,10 +38,18 @@ fn clear_strut_file() -> Result<bool> {
     Ok(true)
 }
 
-pub fn clear_strut_file_if_active<C: NiriClient>(ctx: &mut Ctx<C>) -> anyhow::Result<()> {
-    if ctx.config.interaction.auto_fit.is_some() {
-        clear_strut_file()?;
-        let _ = ctx.socket.send_action(Action::LoadConfigFile { path: None });
+pub fn update_auto_fit<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
+    if let Some(auto_fit) = &ctx.config.interaction.auto_fit {
+        let strut_active = !ctx.state.windows.is_empty() && ctx.state.is_hidden;
+        let strut_value = if strut_active { auto_fit.with_sidebar } else { auto_fit.without_sidebar };
+        let wrote = if strut_value > 0 {
+            write_strut_file(ctx.config.interaction.position, strut_value)?
+        } else {
+            clear_strut_file()?
+        };
+        if wrote {
+            let _ = ctx.socket.send_action(Action::LoadConfigFile { path: None });
+        }
     }
     Ok(())
 }
@@ -148,24 +156,8 @@ pub fn reorder<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
     let all_windows;
 
     let sidebar_ids: Vec<u64> = ctx.state.windows.iter().map(|w| w.id).collect();
-    let strut_active = !ctx.state.windows.is_empty() && ctx.state.is_hidden;
 
-    // Handle auto-fit before positioning so we only position once with final working area
-    if let Some(auto_fit) = &ctx.config.interaction.auto_fit {
-        let strut_value = if strut_active {
-            auto_fit.with_sidebar
-        } else {
-            auto_fit.without_sidebar
-        };
-        let wrote = if strut_value > 0 {
-            write_strut_file(ctx.config.interaction.position, strut_value)?
-        } else {
-            clear_strut_file()?
-        };
-        if wrote {
-            let _ = ctx.socket.send_action(Action::LoadConfigFile { path: None });
-        }
-    }
+    update_auto_fit(ctx)?;
 
     // Fetch fresh data (after possible config reload)
     (display_w, display_h) = ctx.socket.get_screen_dimensions()?;

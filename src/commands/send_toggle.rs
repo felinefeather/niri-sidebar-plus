@@ -1,20 +1,15 @@
-use crate::commands::reorder;
+use crate::commands::reorder::update_auto_fit;
+use crate::commands::reorder as reorder_mod;
 use crate::niri::NiriClient;
 use crate::state::{SentWorkspace, save_state};
 use crate::Ctx;
 use anyhow::Result;
 use niri_ipc::{Action, WorkspaceReferenceArg};
 
-/// Non-sticky mode (default, sticky=false):
-///   - Find sidebar windows on CURRENT workspace
-///   - If any: send them all to target workspace
-///   - If none: find sidebar windows on OTHER workspaces, recall them to current + reorder()
-///
-/// Sticky mode (sticky=true):
-///   - If sent_workspace is set (deployed): recall all to current workspace, clear sent_workspace, reorder()
-///   - If sent_workspace is None (local): send all to target, set sent_workspace with lock_sticky=true
-///   - Auto-fit: on deploy, clear strut file. On recall, next reorder() will restore.
-pub fn send_toggle<C: NiriClient>(ctx: &mut Ctx<C>, target: WorkspaceReferenceArg, sticky: bool) -> Result<()> {
+/// Automatically uses sticky mode when `sticky = true` in config,
+/// otherwise uses presence-based non-sticky mode.
+pub fn send_toggle<C: NiriClient>(ctx: &mut Ctx<C>, target: WorkspaceReferenceArg, sticky_flag: bool) -> Result<()> {
+    let sticky = sticky_flag || ctx.config.interaction.sticky;
     let windows = ctx.socket.get_windows()?;
     let active_ws = ctx.socket.get_active_workspace()?.id;
 
@@ -41,7 +36,7 @@ pub fn send_toggle<C: NiriClient>(ctx: &mut Ctx<C>, target: WorkspaceReferenceAr
             }
             ctx.state.sent_workspace = None;
             save_state(&ctx.state, &ctx.cache_dir)?;
-            reorder(ctx)?;
+            reorder_mod(ctx)?;
         } else {
             // Local → send all to target, set sent_workspace
             let target_clone = target.clone();
@@ -52,8 +47,7 @@ pub fn send_toggle<C: NiriClient>(ctx: &mut Ctx<C>, target: WorkspaceReferenceAr
                     focus: false,
                 })?;
             }
-            // Auto-fit: clear strut file on deploy
-            crate::commands::reorder::clear_strut_file_if_active(ctx)?;
+            // Auto-fit will be handled naturally by reorder() on workspace transition
 
             let saved = match target_clone {
                 WorkspaceReferenceArg::Index(i) => SentWorkspace { index: Some(i), name: None, lock_sticky: true },
@@ -62,6 +56,7 @@ pub fn send_toggle<C: NiriClient>(ctx: &mut Ctx<C>, target: WorkspaceReferenceAr
             };
             ctx.state.sent_workspace = Some(saved);
             save_state(&ctx.state, &ctx.cache_dir)?;
+            update_auto_fit(ctx)?;
         }
     } else {
         // ── Non-sticky mode: presence-based, no state ──
@@ -79,6 +74,7 @@ pub fn send_toggle<C: NiriClient>(ctx: &mut Ctx<C>, target: WorkspaceReferenceAr
                     focus: false,
                 })?;
             }
+            update_auto_fit(ctx)?;
         } else {
             // Sidebar windows elsewhere → recall to current workspace
             for w in all_sidebar {
@@ -88,7 +84,7 @@ pub fn send_toggle<C: NiriClient>(ctx: &mut Ctx<C>, target: WorkspaceReferenceAr
                     focus: false,
                 })?;
             }
-            reorder(ctx)?;
+            reorder_mod(ctx)?;
         }
     }
 
