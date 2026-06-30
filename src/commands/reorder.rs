@@ -1,4 +1,4 @@
-use crate::config::{Align, SidebarPosition};
+use crate::config::{Align, BaseStruts, SidebarPosition};
 use crate::niri::NiriClient;
 use crate::state::save_state;
 use crate::window_rules::{resolve_rule_focus_peek, resolve_rule_peek, resolve_window_size};
@@ -11,14 +11,21 @@ use std::io::Write;
 
 const STRUT_FILE: &str = "/tmp/niri-sidebar-struts.kdl";
 
-fn write_strut_file(pos: SidebarPosition, strut_value: i32) -> Result<bool> {
+fn write_strut_file(pos: SidebarPosition, strut_value: i32, base: Option<&BaseStruts>) -> Result<bool> {
     let field = match pos {
         SidebarPosition::Right => "right",
         SidebarPosition::Left => "left",
         SidebarPosition::Top => "top",
         SidebarPosition::Bottom => "bottom",
     };
-    let content = format!("layout {{\n    struts {{\n        {} {}\n    }}\n}}\n", field, strut_value);
+    let mut fields: Vec<String> = vec![format!("        {} {}", field, strut_value)];
+    if let Some(b) = base {
+        if field != "top" && b.top != 0.0 { fields.push(format!("        top {}", b.top)); }
+        if field != "right" && b.right != 0.0 { fields.push(format!("        right {}", b.right)); }
+        if field != "bottom" && b.bottom != 0.0 { fields.push(format!("        bottom {}", b.bottom)); }
+        if field != "left" && b.left != 0.0 { fields.push(format!("        left {}", b.left)); }
+    }
+    let content = format!("layout {{\n    struts {{\n{}\n    }}\n}}\n", fields.join("\n"));
     let existing = fs::read_to_string(STRUT_FILE).unwrap_or_default();
     if existing == content {
         return Ok(false);
@@ -28,14 +35,33 @@ fn write_strut_file(pos: SidebarPosition, strut_value: i32) -> Result<bool> {
     Ok(true)
 }
 
-fn clear_strut_file() -> Result<bool> {
-    let content = "layout { }\n";
-    let existing = fs::read_to_string(STRUT_FILE).unwrap_or_default();
-    if existing == content {
-        return Ok(false);
+fn clear_strut_file(base: Option<&BaseStruts>) -> Result<bool> {
+    if let Some(b) = base {
+        let mut fields: Vec<String> = vec![];
+        if b.top != 0.0 { fields.push(format!("        top {}", b.top)); }
+        if b.right != 0.0 { fields.push(format!("        right {}", b.right)); }
+        if b.bottom != 0.0 { fields.push(format!("        bottom {}", b.bottom)); }
+        if b.left != 0.0 { fields.push(format!("        left {}", b.left)); }
+        let content = if fields.is_empty() {
+            "layout { }\n".to_string()
+        } else {
+            format!("layout {{\n    struts {{\n{}\n    }}\n}}\n", fields.join("\n"))
+        };
+        let existing = fs::read_to_string(STRUT_FILE).unwrap_or_default();
+        if existing == content {
+            return Ok(false);
+        }
+        fs::write(STRUT_FILE, content)?;
+        Ok(true)
+    } else {
+        let content = "layout { }\n";
+        let existing = fs::read_to_string(STRUT_FILE).unwrap_or_default();
+        if existing == content {
+            return Ok(false);
+        }
+        fs::write(STRUT_FILE, content)?;
+        Ok(true)
     }
-    fs::write(STRUT_FILE, content)?;
-    Ok(true)
 }
 
 pub fn update_auto_fit<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
@@ -48,10 +74,11 @@ pub fn update_auto_fit<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
         });
         let strut_active = has_windows_on_ws && ctx.state.is_hidden;
         let strut_value = if strut_active { auto_fit.with_sidebar } else { auto_fit.without_sidebar };
+        let base = auto_fit.base.as_ref();
         let wrote = if strut_value > 0 {
-            write_strut_file(ctx.config.interaction.position, strut_value)?
+            write_strut_file(ctx.config.interaction.position, strut_value, base)?
         } else {
-            clear_strut_file()?
+            clear_strut_file(base)?
         };
         if wrote {
             let _ = ctx.socket.send_action(Action::LoadConfigFile { path: None });

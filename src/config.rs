@@ -93,11 +93,25 @@ pub struct Margins {
     pub bottom: i32,
 }
 
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+pub struct BaseStruts {
+    #[serde(default)]
+    pub top: f64,
+    #[serde(default)]
+    pub right: f64,
+    #[serde(default)]
+    pub bottom: f64,
+    #[serde(default)]
+    pub left: f64,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AutoFit {
     pub with_sidebar: i32,
     #[serde(default)]
     pub without_sidebar: i32,
+    #[serde(default)]
+    pub base: Option<BaseStruts>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
