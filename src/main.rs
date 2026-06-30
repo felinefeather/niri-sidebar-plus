@@ -1,6 +1,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use fslock::LockFile;
+use niri_ipc::WorkspaceReferenceArg;
 use niri_sidebar::config::load_config;
 use niri_sidebar::state::{get_default_cache_dir, load_state};
 use niri_sidebar::{AppState, Ctx, config, niri::connect};
@@ -36,6 +37,16 @@ enum Commands {
         #[arg()]
         workspace: u64,
     },
+    /// Forcibly move all sidebar windows to a target workspace, ignoring sticky.
+    /// Accepts either a numeric index or a workspace name.
+    Send {
+        #[arg(short = 'i', long, group = "target")]
+        index: Option<u8>,
+        #[arg(short = 'n', long, group = "target")]
+        name: Option<String>,
+    },
+    /// Recall all sidebar windows back to the current workspace (undoes send)
+    Recall,
     /// Generate a default config file if none exists
     Init,
     /// Run a daemon to listen for window close events
@@ -83,6 +94,15 @@ fn main() -> Result<()> {
         Commands::Close => commands::close(&mut ctx)?,
         Commands::Focus { direction } => commands::focus(&mut ctx, direction)?,
         Commands::MoveFrom { workspace } => commands::move_from(&mut ctx, workspace)?,
+        Commands::Send { index, name } => {
+            let target = match (index, name) {
+                (Some(i), _) => WorkspaceReferenceArg::Index(i),
+                (_, Some(n)) => WorkspaceReferenceArg::Name(n),
+                _ => unreachable!("clap group requires exactly one"),
+            };
+            commands::send(&mut ctx, target)?;
+        }
+        Commands::Recall => commands::recall(&mut ctx)?,
         Commands::Init => unreachable!(),
         Commands::Listen => commands::listen(ctx)?,
     }

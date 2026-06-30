@@ -4,7 +4,9 @@ mod focus;
 mod hide;
 mod listen;
 mod movefrom;
+mod recall;
 mod reorder;
+mod send;
 mod togglewindow;
 
 pub use close::close;
@@ -13,5 +15,7 @@ pub use focus::focus;
 pub use hide::toggle_visibility;
 pub use listen::listen;
 pub use movefrom::move_from;
+pub use recall::recall;
 pub use reorder::reorder;
+pub use send::send;
 pub use togglewindow::toggle_window;
