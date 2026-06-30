@@ -20,6 +20,8 @@ pub struct AppState {
 pub struct SentWorkspace {
     pub index: Option<u8>,
     pub name: Option<String>,
+    #[serde(default)]
+    pub lock_sticky: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]

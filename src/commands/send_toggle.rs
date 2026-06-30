@@ -4,7 +4,7 @@ use crate::Ctx;
 use anyhow::Result;
 use niri_ipc::{Action, WorkspaceReferenceArg};
 
-pub fn send_toggle<C: NiriClient>(ctx: &mut Ctx<C>, target: WorkspaceReferenceArg) -> anyhow::Result<()> {
+pub fn send_toggle<C: NiriClient>(ctx: &mut Ctx<C>, target: WorkspaceReferenceArg, lock: bool) -> anyhow::Result<()> {
     let windows = ctx.socket.get_windows()?;
     let sidebar_windows: Vec<_> = windows
         .iter()
@@ -38,9 +38,9 @@ pub fn send_toggle<C: NiriClient>(ctx: &mut Ctx<C>, target: WorkspaceReferenceAr
             })?;
         }
         let saved = match target_clone {
-            WorkspaceReferenceArg::Index(i) => SentWorkspace { index: Some(i), name: None },
-            WorkspaceReferenceArg::Name(n) => SentWorkspace { index: None, name: Some(n) },
-            WorkspaceReferenceArg::Id(_) => SentWorkspace { index: None, name: None },
+            WorkspaceReferenceArg::Index(i) => SentWorkspace { index: Some(i), name: None, lock_sticky: lock },
+            WorkspaceReferenceArg::Name(n) => SentWorkspace { index: None, name: Some(n), lock_sticky: lock },
+            WorkspaceReferenceArg::Id(_) => SentWorkspace { index: None, name: None, lock_sticky: lock },
         };
         ctx.state.sent_workspace = Some(saved);
     }

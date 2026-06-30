@@ -46,11 +46,14 @@ enum Commands {
     },
     /// Toggle sidebar windows between current workspace and a target workspace.
     /// First press sends, second press recalls. Bind to a single key.
+    /// Use --lock to disable sticky while windows are away.
     SendToggle {
         #[arg(short = 'i', long, group = "target")]
         index: Option<u8>,
         #[arg(short = 'n', long, group = "target")]
         name: Option<String>,
+        #[arg(short = 'l', long)]
+        lock: bool,
     },
     /// Recall all sidebar windows back to the current workspace (undoes send)
     Recall,
@@ -109,13 +112,13 @@ fn main() -> Result<()> {
             };
             commands::send(&mut ctx, target)?;
         }
-        Commands::SendToggle { index, name } => {
+        Commands::SendToggle { index, name, lock } => {
             let target = match (index, name) {
                 (Some(i), _) => WorkspaceReferenceArg::Index(i),
                 (_, Some(n)) => WorkspaceReferenceArg::Name(n),
                 _ => unreachable!(),
             };
-            commands::send_toggle(&mut ctx, target)?;
+            commands::send_toggle(&mut ctx, target, lock)?;
         }
         Commands::Recall => commands::recall(&mut ctx)?,
         Commands::Init => unreachable!(),

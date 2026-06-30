@@ -66,6 +66,9 @@ fn handle_focus_change() -> Result<()> {
 
 fn handle_workspace_focus(ws_id: u64) -> Result<()> {
     let (mut ctx, _lock) = get_ctx()?;
+    if ctx.state.sent_workspace.as_ref().map_or(false, |s| s.lock_sticky) {
+        return Ok(());
+    }
     if ctx.config.interaction.sticky {
         process_move(&mut ctx, ws_id)
     } else {
