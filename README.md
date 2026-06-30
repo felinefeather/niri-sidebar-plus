@@ -1,8 +1,8 @@
 # niri-sidebar-plus
 
-A fork of [niri-sidebar](https://github.com/Vigintillionn/niri-sidebar) with alignment control, auto-fit struts, and auto-defocus.
+> ⚠️ **AI-generated fork — use at your own risk.** Built via OpenCode + DeepSeek. Expect rough edges.
 
-[felinefeather/niri-sidebar-plus](https://github.com/felinefeather/niri-sidebar-plus)
+A fork of [niri-sidebar](https://github.com/Vigintillionn/niri-sidebar) with alignment control, auto-fit struts, and auto-defocus.
 
 ## What's New
 
