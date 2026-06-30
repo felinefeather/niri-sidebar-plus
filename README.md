@@ -20,7 +20,7 @@ align = "top-right"  # options: top-right, top-left, bottom-right, bottom-left
 - **`top`/`bottom`** — stacking direction (top→bottom vs bottom→top).
 
 ### `auto_fit` — Per-Workspace Struts
-Dynamically writes niri layout struts per active workspace. When the sidebar is **hidden** with windows on the **current** workspace, applies a strut.
+Dynamically writes niri layout struts per active workspace. When the sidebar is **hidden** with windows on the **current** workspace, applies a strut to work around niri's 75px minimum-visible constraint.
 
 Requires one line in your niri config:
 
@@ -32,6 +32,11 @@ include "/tmp/niri-sidebar-struts.kdl"
 [interaction.auto_fit]
 with_sidebar = 60   # strut when hidden with windows (px)
 without_sidebar = 0  # strut otherwise (px)
+
+# Optional: preserve your existing niri struts (supports float values)
+[interaction.auto_fit.base]
+top = 64.0
+bottom = -4.0
 ```
 
 ### `auto_defocus` — Auto-Defocus
