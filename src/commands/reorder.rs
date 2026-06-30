@@ -138,13 +138,23 @@ fn calculate_coordinates<C: NiriClient>(
     screen: (i32, i32),
     stack_offset: i32,
     active_peek: i32,
+    gap_mode: GapMode,
     ctx: &Ctx<C>,
 ) -> (i32, i32) {
     let state = &ctx.state;
     let margins = &ctx.config.margins;
     let (sw, sh) = screen;
     let (w, h) = (dims.width, dims.height);
-    let (aw, _ah) = actual_size;
+    let (aw, ah) = actual_size;
+    // Dynamic mode uses actual window size for positioning to prevent overlap
+    let pos_h = match gap_mode {
+        GapMode::Dynamic => ah,
+        GapMode::Static => h,
+    };
+    let pos_w = match gap_mode {
+        GapMode::Dynamic => aw,
+        GapMode::Static => w,
+    };
 
     match pos {
         SidebarPosition::Right => {
@@ -159,7 +169,7 @@ fn calculate_coordinates<C: NiriClient>(
             let y = if align.stacks_downward() {
                 margins.top + stack_offset
             } else {
-                sh - h - margins.bottom - stack_offset
+                sh - pos_h - margins.bottom - stack_offset
             };
             (x, y)
         }
@@ -179,7 +189,7 @@ fn calculate_coordinates<C: NiriClient>(
             let y = if align.stacks_downward() {
                 margins.top + stack_offset
             } else {
-                sh - h - margins.bottom - stack_offset
+                sh - pos_h - margins.bottom - stack_offset
             };
             (x, y)
         }
@@ -193,7 +203,7 @@ fn calculate_coordinates<C: NiriClient>(
             let visible_y = if state.is_hidden {
                 sh - active_peek
             } else {
-                sh - h - margins.bottom
+                sh - pos_h - margins.bottom
             };
             let hidden_y = sh - active_peek;
             let y = if state.is_hidden { hidden_y } else { visible_y };
@@ -207,7 +217,7 @@ fn calculate_coordinates<C: NiriClient>(
             };
 
             let visible_y = margins.top;
-            let hidden_y = -h + active_peek;
+            let hidden_y = -pos_h + active_peek;
             let y = if state.is_hidden { hidden_y } else { visible_y };
             (x, y)
         }
@@ -280,6 +290,7 @@ pub fn reorder<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
             (display_w, display_h),
             current_stack_offset,
             active_peek,
+            gap_mode,
             ctx,
         );
         match position {
@@ -989,18 +1000,19 @@ mod tests {
             } if *y == 880.0
         )));
         // Window 2 (Tall rule, config_h=400, actual_h=200):
-        // Gap mode Dynamic: offset = actual_h1 + gap = 200 + 10 = 210
-        // Y = ScreenH - config_h2 - MarginBottom - Offset
-        // Y = 1080 - 400 - 0 - 210 = 470
+        // Gap mode Dynamic: offset = ah1 + gap = 200 + 10 = 210
+        // Y = ScreenH - ah2 - MarginBottom - Offset
+        // Y = 1080 - 200 - 0 - 210 = 670
         assert!(actions.iter().any(|a| matches!(a,
             Action::MoveFloatingWindow {
                 id: Some(2),
                 y: PositionChange::SetFixed(y),
                 ..
-            } if *y == 470.0
+            } if *y == 670.0
         )));
         // Window 3 (Default, actual_h=200):
-        // Previous Offset = 210 + actual_h2 + Gap = 210 + 200 + 10 = 420
+        // Previous Offset = 210 + ah2 + Gap = 210 + 200 + 10 = 420
+        // Y = ScreenH - ah3 - MarginBottom - Offset
         // Y = 1080 - 200 - 0 - 420 = 460
         assert!(actions.iter().any(|a| matches!(a,
             Action::MoveFloatingWindow {
