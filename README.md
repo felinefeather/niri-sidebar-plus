@@ -1,6 +1,6 @@
 # niri-sidebar-plus
 
-> ⚠️ **AI-generated fork — use at your own risk.** Built via OpenCode + DeepSeek. Expect rough edges.
+> ⚠️ **AI-generated fork — use at your own risk.** Built via OpenCode. Expect rough edges.
 
 A fork of [niri-sidebar](https://github.com/Vigintillionn/niri-sidebar) with alignment control, auto-fit struts, and auto-defocus.
 
@@ -9,7 +9,7 @@ A fork of [niri-sidebar](https://github.com/Vigintillionn/niri-sidebar) with ali
 Three features not in upstream:
 
 ### `align` — Window Alignment
-Controls overflow direction when a window's actual size exceeds the configured width/height (e.g., QQ with large `min-width`).
+Controls overflow direction when a window's actual size exceeds the configured width/height (e.g., applications with large `min-width`) to make it looks better.
 
 ```toml
 [interaction]
@@ -35,7 +35,7 @@ without_sidebar = 0  # strut otherwise (px)
 ```
 
 ### `auto_defocus` — Auto-Defocus
-When enabled, pressing `Mod+D` adds a window to the sidebar then immediately returns focus to the tiled workspace.
+When enabled, pressing `Mod+S` adds a window to the sidebar then immediately returns focus to the tiled workspace.
 
 ```toml
 [interaction]
