@@ -1,10 +1,8 @@
 # niri-sidebar-plus
 
-> 🦀 A fork of [niri-sidebar](https://github.com/Vigintillionn/niri-sidebar) with enhanced alignment, auto-fit struts, and auto-defocus.
->
-> 🔧 **Built by [OpenCode](https://opencode.ai) × [DeepSeek](https://deepseek.com)** — AI-assisted development, human-reviewed.  
-> 🔗 Forked from [Vigintillionn/niri-sidebar](https://github.com/Vigintillionn/niri-sidebar) · Published at [felinefeather/niri-sidebar-plus](https://github.com/felinefeather/niri-sidebar-plus)  
-> 📧 felinefeather@outlook.com
+A fork of [niri-sidebar](https://github.com/Vigintillionn/niri-sidebar) with alignment control, auto-fit struts, and auto-defocus.
+
+[felinefeather/niri-sidebar-plus](https://github.com/felinefeather/niri-sidebar-plus)
 
 ## What's New
 
@@ -59,8 +57,5 @@ Same as upstream. See the [original README](https://github.com/Vigintillionn/nir
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT.
 
----
-
-*Built with [OpenCode](https://opencode.ai) and [DeepSeek](https://deepseek.com).*
