@@ -1,5 +1,6 @@
 use crate::commands::movefrom::move_to;
 use crate::commands::reorder;
+use crate::commands::reorder::SUPPRESS_ACTIVE;
 use crate::commands::togglewindow::add_to_sidebar;
 use crate::config::load_config;
 use crate::niri::connect;
@@ -11,10 +12,9 @@ use fslock::LockFile;
 use niri_ipc::socket::Socket;
 use niri_ipc::{Event, Request, Window};
 use std::sync::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
-static SUPPRESS_ACTIVE: AtomicBool = AtomicBool::new(false);
 static SUPPRESS_START: Mutex<Option<Instant>> = Mutex::new(None);
 const SUPPRESS_WINDOW_MS: u64 = 250;
 
@@ -112,7 +112,6 @@ pub fn process_close<C: NiriClient>(ctx: &mut Ctx<C>, closed_id: u64) -> Result<
 
         ctx.state.windows.remove(index);
         save_state(&ctx.state, &ctx.cache_dir)?;
-        dbg!(&ctx.state);
 
         reorder(ctx)?;
     }

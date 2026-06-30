@@ -49,6 +49,10 @@ sticky = false
 # When adding a window to sidebar (Mod+D), automatically defocus it
 # so the tiled workspace regains focus immediately.
 #auto_defocus = true
+# Suppress focus_peek immediately after workspace switch so focus-follows-mouse
+# won't accidentally pop out sidebar windows. Clears on any focus change after
+# a brief cooldown.
+#suppress_focus_peek_on_fresh = true
 
 # Example window rule
 # all fields are optional if not given a default from other configs will be used

@@ -25,7 +25,7 @@ Dynamically writes niri layout struts per active workspace. When the sidebar is 
 Requires one line in your niri config:
 
 ```kdl
-include "/tmp/niri-sidebar-struts.kdl"
+include "/path/to/cache/niri-sidebar/struts.kdl"
 ```
 
 ```toml

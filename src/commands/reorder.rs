@@ -8,13 +8,20 @@ use niri_ipc::{Action, PositionChange, Window, WorkspaceReferenceArg};
 use std::collections::HashSet;
 use std::fs;
 use std::io::Write;
+use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 
-const STRUT_FILE: &str = "/tmp/niri-sidebar-struts.kdl";
+pub(crate) static SUPPRESS_ACTIVE: AtomicBool = AtomicBool::new(false);
+
+fn strut_file_path(cache_dir: &Path) -> std::path::PathBuf {
+    cache_dir.join("struts.kdl")
+}
 
 fn write_strut_file(
     pos: SidebarPosition,
     strut_value: i32,
     base: Option<&BaseStruts>,
+    path: &Path,
 ) -> Result<bool> {
     let field = match pos {
         SidebarPosition::Right => "right",
@@ -41,16 +48,16 @@ fn write_strut_file(
         "layout {{\n    struts {{\n{}\n    }}\n}}\n",
         fields.join("\n")
     );
-    let existing = fs::read_to_string(STRUT_FILE).unwrap_or_default();
+    let existing = fs::read_to_string(path).unwrap_or_default();
     if existing == content {
         return Ok(false);
     }
-    let mut f = fs::File::create(STRUT_FILE)?;
+    let mut f = fs::File::create(path)?;
     f.write_all(content.as_bytes())?;
     Ok(true)
 }
 
-fn clear_strut_file(base: Option<&BaseStruts>) -> Result<bool> {
+fn clear_strut_file(base: Option<&BaseStruts>, path: &Path) -> Result<bool> {
     if let Some(b) = base {
         let mut fields: Vec<String> = vec![];
         if b.top != 0.0 {
@@ -73,19 +80,19 @@ fn clear_strut_file(base: Option<&BaseStruts>) -> Result<bool> {
                 fields.join("\n")
             )
         };
-        let existing = fs::read_to_string(STRUT_FILE).unwrap_or_default();
+        let existing = fs::read_to_string(path).unwrap_or_default();
         if existing == content {
             return Ok(false);
         }
-        fs::write(STRUT_FILE, content)?;
+        fs::write(path, content)?;
         Ok(true)
     } else {
         let content = "layout { }\n";
-        let existing = fs::read_to_string(STRUT_FILE).unwrap_or_default();
+        let existing = fs::read_to_string(path).unwrap_or_default();
         if existing == content {
             return Ok(false);
         }
-        fs::write(STRUT_FILE, content)?;
+        fs::write(path, content)?;
         Ok(true)
     }
 }
@@ -105,10 +112,11 @@ pub fn update_auto_fit<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
             auto_fit.without_sidebar
         };
         let base = auto_fit.base.as_ref();
+        let path = strut_file_path(&ctx.cache_dir);
         let wrote = if strut_value > 0 {
-            write_strut_file(ctx.config.interaction.position, strut_value, base)?
+            write_strut_file(ctx.config.interaction.position, strut_value, base, &path)?
         } else {
-            clear_strut_file(base)?
+            clear_strut_file(base, &path)?
         };
         if wrote {
             let _ = ctx
@@ -267,6 +275,7 @@ pub fn reorder<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
             !w.is_floating && w.workspace_id == Some(current_ws) && !sidebar_ids.contains(&w.id)
         })
     {
+        SUPPRESS_ACTIVE.store(false, Ordering::Relaxed);
         ctx.state.focus_peek_suppressed = false;
     }
 
