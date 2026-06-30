@@ -10,6 +10,13 @@ use anyhow::Result;
 use fslock::LockFile;
 use niri_ipc::socket::Socket;
 use niri_ipc::{Event, Request, Window};
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{Duration, Instant};
+
+static SUPPRESS_ACTIVE: AtomicBool = AtomicBool::new(false);
+static SUPPRESS_START: Mutex<Option<Instant>> = Mutex::new(None);
+const SUPPRESS_WINDOW_MS: u64 = 250;
 
 pub fn listen(mut ctx: Ctx<Socket>) -> Result<()> {
     let _ = ctx.socket.send(Request::EventStream)?;
@@ -27,7 +34,7 @@ pub fn listen(mut ctx: Ctx<Socket>) -> Result<()> {
 
         match event {
             Event::WindowClosed { id } => handle_close_event(id)?,
-            Event::WindowFocusChanged { .. } => handle_focus_change()?,
+            Event::WindowFocusChanged { id } => handle_focus_change(id)?,
             Event::WorkspaceActivated { id, focused: true } => handle_workspace_focus(id)?,
             Event::WindowOpenedOrChanged { window } => handle_new_window(&window)?,
             _ => {}
@@ -42,8 +49,9 @@ fn get_ctx() -> Result<(Ctx<Socket>, LockFile)> {
     let mut lock_file = LockFile::open(&lock_path)?;
     lock_file.lock()?;
 
-    let state = load_state(&cache_dir)?;
+    let mut state = load_state(&cache_dir)?;
     let config = load_config();
+    state.focus_peek_suppressed = SUPPRESS_ACTIVE.load(Ordering::Relaxed);
     let ctx = Ctx {
         state,
         config,
@@ -59,13 +67,25 @@ fn handle_close_event(closed_id: u64) -> Result<()> {
     process_close(&mut ctx, closed_id)
 }
 
-fn handle_focus_change() -> Result<()> {
+fn handle_focus_change(_focused_id: Option<u64>) -> Result<()> {
     let (mut ctx, _lock) = get_ctx()?;
+    // Only lift suppression if enough time passed since workspace switch,
+    // filtering out auto-focus events that fire immediately on switch.
+    if SUPPRESS_ACTIVE.load(Ordering::Relaxed)
+        && let Some(start) = *SUPPRESS_START.lock().unwrap()
+        && start.elapsed() > Duration::from_millis(SUPPRESS_WINDOW_MS)
+    {
+        SUPPRESS_ACTIVE.store(false, Ordering::Relaxed);
+    }
+    ctx.state.focus_peek_suppressed = SUPPRESS_ACTIVE.load(Ordering::Relaxed);
     process_focus(&mut ctx)
 }
 
 fn handle_workspace_focus(ws_id: u64) -> Result<()> {
     let (mut ctx, _lock) = get_ctx()?;
+    SUPPRESS_ACTIVE.store(true, Ordering::Relaxed);
+    *SUPPRESS_START.lock().unwrap() = Some(Instant::now());
+    ctx.state.focus_peek_suppressed = true;
     if ctx
         .state
         .sent_workspace
@@ -134,8 +154,8 @@ pub fn process_new_window<C: NiriClient>(ctx: &mut Ctx<C>, window: &Window) -> R
     {
         add_to_sidebar(ctx, window)?;
         save_state(&ctx.state, &ctx.cache_dir)?;
-        reorder(ctx)?;
     }
+    reorder(ctx)?;
 
     Ok(())
 }

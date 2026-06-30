@@ -55,6 +55,14 @@ When enabled, pressing `Mod+S` adds a window to the sidebar then immediately ret
 auto_defocus = true
 ```
 
+### `suppress_focus_peek_on_fresh` — Hide on Workspace Switch
+When enabled, sidebar windows use `peek` instead of `focus_peek` right after a workspace switch. Focus-follows-mouse users won't see windows pop out accidentally. Clears on any focus change after a brief cooldown.
+
+```toml
+[interaction]
+suppress_focus_peek_on_fresh = true
+```
+
 ### `send`, `send-toggle` & `recall` — Workspace Transfer
 Forcibly move all sidebar windows to a target workspace.
 

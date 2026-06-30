@@ -135,6 +135,8 @@ pub struct Interaction {
     pub auto_fit: Option<AutoFit>,
     #[serde(default)]
     pub auto_defocus: bool,
+    #[serde(default)]
+    pub suppress_focus_peek_on_fresh: bool,
 }
 
 impl Interaction {

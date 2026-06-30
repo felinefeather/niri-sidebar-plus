@@ -14,6 +14,8 @@ pub struct AppState {
     pub is_flipped: bool,
     #[serde(default)]
     pub sent_workspace: Option<SentWorkspace>,
+    #[serde(skip, default)]
+    pub focus_peek_suppressed: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -91,6 +93,7 @@ mod tests {
             is_hidden: true,
             is_flipped: true,
             sent_workspace: None,
+            focus_peek_suppressed: false,
         };
 
         save_state(&original_state, temp_dir.path()).expect("Failed to save state");

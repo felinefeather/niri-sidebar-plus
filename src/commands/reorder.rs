@@ -4,7 +4,7 @@ use crate::state::save_state;
 use crate::window_rules::{resolve_rule_focus_peek, resolve_rule_peek, resolve_window_size};
 use crate::{Ctx, WindowTarget};
 use anyhow::Result;
-use niri_ipc::{Action, PositionChange, Window};
+use niri_ipc::{Action, PositionChange, Window, WorkspaceReferenceArg};
 use std::collections::HashSet;
 use std::fs;
 use std::io::Write;
@@ -233,6 +233,43 @@ pub fn reorder<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
     let current_ws = ctx.socket.get_active_workspace()?.id;
     let all_windows = ctx.socket.get_windows()?;
 
+    // Auto-recall stray sidebar windows when sticky is enabled.
+    // Catches cases where WorkspaceActivated event timing prevents
+    // handle_workspace_focus from moving windows in time.
+    if ctx.config.interaction.sticky
+        && ctx
+            .state
+            .sent_workspace
+            .as_ref()
+            .is_none_or(|s| !s.lock_sticky)
+    {
+        let stray: Vec<&Window> = all_windows
+            .iter()
+            .filter(|w| {
+                w.is_floating && w.workspace_id != Some(current_ws) && sidebar_ids.contains(&w.id)
+            })
+            .collect();
+        if !stray.is_empty() {
+            for w in stray {
+                let _ = ctx.socket.send_action(Action::MoveWindowToWorkspace {
+                    window_id: Some(w.id),
+                    reference: WorkspaceReferenceArg::Id(current_ws),
+                    focus: false,
+                });
+            }
+        }
+    }
+
+    // Lift focus_peek suppression when non-sidebar windows exist on this workspace.
+    // Catches auto-focus-on-open where WindowFocusChanged may not fire.
+    if ctx.state.focus_peek_suppressed
+        && all_windows.iter().any(|w| {
+            !w.is_floating && w.workspace_id == Some(current_ws) && !sidebar_ids.contains(&w.id)
+        })
+    {
+        ctx.state.focus_peek_suppressed = false;
+    }
+
     let mut sidebar_windows: Vec<_> = all_windows
         .iter()
         .filter(|w| {
@@ -264,22 +301,21 @@ pub fn reorder<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
     let gap_mode = ctx.config.geometry.gap_mode;
     let mut current_stack_offset = 0;
 
-    // Fix niri IPC race: WindowFocusChanged fires but get_windows() may still report
-    // stale is_focused. Use get_active_window() as ground truth — if the focused window
-    // is not a sidebar window, force peek (not focus_peek) for ALL sidebar windows.
-    let active_focused = ctx.socket.get_active_window().ok();
-    let active_is_sidebar = active_focused
-        .as_ref()
+    // Override stale window.is_focused: if the active window is not
+    // a sidebar window, all sidebar windows use peek not focus_peek.
+    let focused_is_sidebar = ctx
+        .socket
+        .get_active_window()
+        .ok()
         .is_some_and(|w| sidebar_ids.contains(&w.id));
-    let force_peek = !active_is_sidebar
-        && all_windows
-            .iter()
-            .any(|w| w.is_focused && sidebar_ids.contains(&w.id));
 
     for window in sidebar_windows.iter() {
         let dims = resolve_dimensions(window, ctx);
         let (aw, ah) = window.layout.window_size;
-        let focused = !force_peek && window.is_focused;
+        let focused = focused_is_sidebar
+            && window.is_focused
+            && !(ctx.config.interaction.suppress_focus_peek_on_fresh
+                && ctx.state.focus_peek_suppressed);
         let active_peek = if focused {
             resolve_rule_focus_peek(
                 &ctx.config.window_rule,
@@ -1033,7 +1069,7 @@ mod tests {
     #[test]
     fn test_focus_peek_transitions_on_focus_change() {
         let temp_dir = tempdir().unwrap();
-        // Two hidden windows. Focus moves from 1→2→1. Verify peek retracts/extends.
+        // Two hidden windows + one tiled. Focus moves from 1→2→1.
         let w1a = mock_window(1, true, true, 1, Some((1.0, 2.0)));
         let w2a = mock_window(2, false, true, 1, Some((1.0, 2.0)));
         let mock1 = MockNiri::new(vec![w1a, w2a]);
@@ -1067,10 +1103,9 @@ mod tests {
             socket: mock1,
             cache_dir: temp_dir.path().to_path_buf(),
         };
-
         reorder(&mut ctx).unwrap();
 
-        // After first reorder: id=1 focused (x=1920-50=1870), id=2 unfocused (x=1920-10=1910)
+        // id=1 focused (x=1870), id=2 unfocused (x=1910) — tiled window present, focus_peek active
         let actions = &ctx.socket.sent_actions;
         assert!(
             actions.iter().any(|a| matches!(
@@ -1095,7 +1130,6 @@ mod tests {
             "unfocused window 2 should peek 10px"
         );
 
-        // Now focus moves: id=1 loses focus, id=2 gains focus
         let w1b = mock_window(1, false, true, 1, Some((1.0, 2.0)));
         let w2b = mock_window(2, true, true, 1, Some((1.0, 2.0)));
         let mock2 = MockNiri::new(vec![w1b, w2b]);
