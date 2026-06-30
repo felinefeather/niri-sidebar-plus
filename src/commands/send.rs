@@ -1,5 +1,5 @@
-use crate::niri::NiriClient;
 use crate::Ctx;
+use crate::niri::NiriClient;
 use anyhow::Result;
 use niri_ipc::{Action, WorkspaceReferenceArg};
 

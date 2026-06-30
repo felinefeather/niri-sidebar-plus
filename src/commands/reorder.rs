@@ -1,4 +1,4 @@
-use crate::config::{Align, BaseStruts, SidebarPosition};
+use crate::config::{Align, BaseStruts, GapMode, SidebarPosition};
 use crate::niri::NiriClient;
 use crate::state::save_state;
 use crate::window_rules::{resolve_rule_focus_peek, resolve_rule_peek, resolve_window_size};
@@ -11,7 +11,11 @@ use std::io::Write;
 
 const STRUT_FILE: &str = "/tmp/niri-sidebar-struts.kdl";
 
-fn write_strut_file(pos: SidebarPosition, strut_value: i32, base: Option<&BaseStruts>) -> Result<bool> {
+fn write_strut_file(
+    pos: SidebarPosition,
+    strut_value: i32,
+    base: Option<&BaseStruts>,
+) -> Result<bool> {
     let field = match pos {
         SidebarPosition::Right => "right",
         SidebarPosition::Left => "left",
@@ -20,12 +24,23 @@ fn write_strut_file(pos: SidebarPosition, strut_value: i32, base: Option<&BaseSt
     };
     let mut fields: Vec<String> = vec![format!("        {} {}", field, strut_value)];
     if let Some(b) = base {
-        if field != "top" && b.top != 0.0 { fields.push(format!("        top {}", b.top)); }
-        if field != "right" && b.right != 0.0 { fields.push(format!("        right {}", b.right)); }
-        if field != "bottom" && b.bottom != 0.0 { fields.push(format!("        bottom {}", b.bottom)); }
-        if field != "left" && b.left != 0.0 { fields.push(format!("        left {}", b.left)); }
+        if field != "top" && b.top != 0.0 {
+            fields.push(format!("        top {}", b.top));
+        }
+        if field != "right" && b.right != 0.0 {
+            fields.push(format!("        right {}", b.right));
+        }
+        if field != "bottom" && b.bottom != 0.0 {
+            fields.push(format!("        bottom {}", b.bottom));
+        }
+        if field != "left" && b.left != 0.0 {
+            fields.push(format!("        left {}", b.left));
+        }
     }
-    let content = format!("layout {{\n    struts {{\n{}\n    }}\n}}\n", fields.join("\n"));
+    let content = format!(
+        "layout {{\n    struts {{\n{}\n    }}\n}}\n",
+        fields.join("\n")
+    );
     let existing = fs::read_to_string(STRUT_FILE).unwrap_or_default();
     if existing == content {
         return Ok(false);
@@ -38,14 +53,25 @@ fn write_strut_file(pos: SidebarPosition, strut_value: i32, base: Option<&BaseSt
 fn clear_strut_file(base: Option<&BaseStruts>) -> Result<bool> {
     if let Some(b) = base {
         let mut fields: Vec<String> = vec![];
-        if b.top != 0.0 { fields.push(format!("        top {}", b.top)); }
-        if b.right != 0.0 { fields.push(format!("        right {}", b.right)); }
-        if b.bottom != 0.0 { fields.push(format!("        bottom {}", b.bottom)); }
-        if b.left != 0.0 { fields.push(format!("        left {}", b.left)); }
+        if b.top != 0.0 {
+            fields.push(format!("        top {}", b.top));
+        }
+        if b.right != 0.0 {
+            fields.push(format!("        right {}", b.right));
+        }
+        if b.bottom != 0.0 {
+            fields.push(format!("        bottom {}", b.bottom));
+        }
+        if b.left != 0.0 {
+            fields.push(format!("        left {}", b.left));
+        }
         let content = if fields.is_empty() {
             "layout { }\n".to_string()
         } else {
-            format!("layout {{\n    struts {{\n{}\n    }}\n}}\n", fields.join("\n"))
+            format!(
+                "layout {{\n    struts {{\n{}\n    }}\n}}\n",
+                fields.join("\n")
+            )
         };
         let existing = fs::read_to_string(STRUT_FILE).unwrap_or_default();
         if existing == content {
@@ -73,7 +99,11 @@ pub fn update_auto_fit<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
             w.is_floating && w.workspace_id == Some(current_ws) && sidebar_ids.contains(&w.id)
         });
         let strut_active = has_windows_on_ws && ctx.state.is_hidden;
-        let strut_value = if strut_active { auto_fit.with_sidebar } else { auto_fit.without_sidebar };
+        let strut_value = if strut_active {
+            auto_fit.with_sidebar
+        } else {
+            auto_fit.without_sidebar
+        };
         let base = auto_fit.base.as_ref();
         let wrote = if strut_value > 0 {
             write_strut_file(ctx.config.interaction.position, strut_value, base)?
@@ -81,7 +111,9 @@ pub fn update_auto_fit<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
             clear_strut_file(base)?
         };
         if wrote {
-            let _ = ctx.socket.send_action(Action::LoadConfigFile { path: None });
+            let _ = ctx
+                .socket
+                .send_action(Action::LoadConfigFile { path: None });
         }
     }
     Ok(())
@@ -185,8 +217,8 @@ fn calculate_coordinates<C: NiriClient>(
 pub fn reorder<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
     let display_w;
     let display_h;
-    let current_ws;
-    let all_windows;
+    
+    
 
     let sidebar_ids: Vec<u64> = ctx.state.windows.iter().map(|w| w.id).collect();
 
@@ -194,8 +226,8 @@ pub fn reorder<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
 
     // Fetch fresh data (after possible config reload)
     (display_w, display_h) = ctx.socket.get_screen_dimensions()?;
-    current_ws = ctx.socket.get_active_workspace()?.id;
-    all_windows = ctx.socket.get_windows()?;
+    let current_ws = ctx.socket.get_active_workspace()?.id;
+    let all_windows = ctx.socket.get_windows()?;
 
     let mut sidebar_windows: Vec<_> = all_windows
         .iter()
@@ -225,23 +257,46 @@ pub fn reorder<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
     let position = ctx.config.interaction.position;
     let align = ctx.config.interaction.align;
     let gap = ctx.config.geometry.gap;
+    let gap_mode = ctx.config.geometry.gap_mode;
     let mut current_stack_offset = 0;
 
     for window in sidebar_windows.iter() {
         let dims = resolve_dimensions(window, ctx);
         let (aw, ah) = window.layout.window_size;
         let active_peek = if window.is_focused {
-            resolve_rule_focus_peek(&ctx.config.window_rule, window, ctx.config.interaction.get_focus_peek())
+            resolve_rule_focus_peek(
+                &ctx.config.window_rule,
+                window,
+                ctx.config.interaction.get_focus_peek(),
+            )
         } else {
             resolve_rule_peek(&ctx.config.window_rule, window, ctx.config.interaction.peek)
         };
         let (target_x, target_y) = calculate_coordinates(
-            position, align, dims, (aw, ah),
-            (display_w, display_h), current_stack_offset, active_peek, ctx,
+            position,
+            align,
+            dims,
+            (aw, ah),
+            (display_w, display_h),
+            current_stack_offset,
+            active_peek,
+            ctx,
         );
         match position {
-            SidebarPosition::Left | SidebarPosition::Right => current_stack_offset += dims.height + gap,
-            SidebarPosition::Top | SidebarPosition::Bottom => current_stack_offset += dims.width + gap,
+            SidebarPosition::Left | SidebarPosition::Right => {
+                let step = match gap_mode {
+                    GapMode::Static => gap,
+                    GapMode::Dynamic => ah + gap,
+                };
+                current_stack_offset += step;
+            }
+            SidebarPosition::Top | SidebarPosition::Bottom => {
+                let step = match gap_mode {
+                    GapMode::Static => gap,
+                    GapMode::Dynamic => aw + gap,
+                };
+                current_stack_offset += step;
+            }
         }
         let _ = ctx.socket.send_action(Action::MoveFloatingWindow {
             id: Some(window.id),
@@ -923,7 +978,7 @@ mod tests {
         let actions = &ctx.socket.sent_actions;
         // Screen H: 1080
 
-        // Window 1 (Default, config_h=200):
+        // Window 1 (Default, actual_h=200):
         // Y = ScreenH - configH - MarginBottom - Offset
         // Y = 1080 - 200 - 0 - 0 = 880
         assert!(actions.iter().any(|a| matches!(a,
@@ -933,8 +988,8 @@ mod tests {
                 ..
             } if *y == 880.0
         )));
-        // Window 2 (Tall rule, config_h=400):
-        // Previous Offset = config_h1 + Gap = 200 + 10 = 210
+        // Window 2 (Tall rule, config_h=400, actual_h=200):
+        // Gap mode Dynamic: offset = actual_h1 + gap = 200 + 10 = 210
         // Y = ScreenH - config_h2 - MarginBottom - Offset
         // Y = 1080 - 400 - 0 - 210 = 470
         assert!(actions.iter().any(|a| matches!(a,
@@ -944,16 +999,16 @@ mod tests {
                 ..
             } if *y == 470.0
         )));
-        // Window 3 (Default, config_h=200):
-        // Previous Offset = 210 + config_h2 + Gap = 210 + 400 + 10 = 620
+        // Window 3 (Default, actual_h=200):
+        // Previous Offset = 210 + actual_h2 + Gap = 210 + 200 + 10 = 420
         // Y = ScreenH - config_h3 - MarginBottom - Offset
-        // Y = 1080 - 200 - 0 - 620 = 260
+        // Y = 1080 - 200 - 0 - 420 = 460
         assert!(actions.iter().any(|a| matches!(a,
             Action::MoveFloatingWindow {
                 id: Some(3),
                 y: PositionChange::SetFixed(y),
                 ..
-            } if *y == 260.0
+            } if *y == 460.0
         )));
     }
 
@@ -973,8 +1028,20 @@ mod tests {
             is_hidden: true,
             ..Default::default()
         };
-        state.windows.push(WindowState { id: 1, width: 300, height: 200, is_floating: false, position: None });
-        state.windows.push(WindowState { id: 2, width: 300, height: 200, is_floating: false, position: None });
+        state.windows.push(WindowState {
+            id: 1,
+            width: 300,
+            height: 200,
+            is_floating: false,
+            position: None,
+        });
+        state.windows.push(WindowState {
+            id: 2,
+            width: 300,
+            height: 200,
+            is_floating: false,
+            position: None,
+        });
 
         let mut ctx = Ctx {
             state,
@@ -987,12 +1054,28 @@ mod tests {
 
         // After first reorder: id=1 focused (x=1920-50=1870), id=2 unfocused (x=1920-10=1910)
         let actions = &ctx.socket.sent_actions;
-        assert!(actions.iter().any(|a| matches!(a,
-            Action::MoveFloatingWindow { id: Some(1), x: PositionChange::SetFixed(1870.0), .. }
-        )), "focused window 1 should peek 50px");
-        assert!(actions.iter().any(|a| matches!(a,
-            Action::MoveFloatingWindow { id: Some(2), x: PositionChange::SetFixed(1910.0), .. }
-        )), "unfocused window 2 should peek 10px");
+        assert!(
+            actions.iter().any(|a| matches!(
+                a,
+                Action::MoveFloatingWindow {
+                    id: Some(1),
+                    x: PositionChange::SetFixed(1870.0),
+                    ..
+                }
+            )),
+            "focused window 1 should peek 50px"
+        );
+        assert!(
+            actions.iter().any(|a| matches!(
+                a,
+                Action::MoveFloatingWindow {
+                    id: Some(2),
+                    x: PositionChange::SetFixed(1910.0),
+                    ..
+                }
+            )),
+            "unfocused window 2 should peek 10px"
+        );
 
         // Now focus moves: id=1 loses focus, id=2 gains focus
         let w1b = mock_window(1, false, true, 1, Some((1.0, 2.0)));
@@ -1004,11 +1087,27 @@ mod tests {
 
         let actions2 = &ctx.socket.sent_actions;
         // id=1 should now retract to peek=10 (x=1910), id=2 should extend to focus_peek=50 (x=1870)
-        assert!(actions2.iter().any(|a| matches!(a,
-            Action::MoveFloatingWindow { id: Some(1), x: PositionChange::SetFixed(1910.0), .. }
-        )), "unfocused window 1 should retract to 10px peek");
-        assert!(actions2.iter().any(|a| matches!(a,
-            Action::MoveFloatingWindow { id: Some(2), x: PositionChange::SetFixed(1870.0), .. }
-        )), "focused window 2 should extend to 50px peek");
+        assert!(
+            actions2.iter().any(|a| matches!(
+                a,
+                Action::MoveFloatingWindow {
+                    id: Some(1),
+                    x: PositionChange::SetFixed(1910.0),
+                    ..
+                }
+            )),
+            "unfocused window 1 should retract to 10px peek"
+        );
+        assert!(
+            actions2.iter().any(|a| matches!(
+                a,
+                Action::MoveFloatingWindow {
+                    id: Some(2),
+                    x: PositionChange::SetFixed(1870.0),
+                    ..
+                }
+            )),
+            "focused window 2 should extend to 50px peek"
+        );
     }
 }

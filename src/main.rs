@@ -117,7 +117,11 @@ fn main() -> Result<()> {
             };
             commands::send(&mut ctx, target)?;
         }
-        Commands::SendToggle { index, name, sticky } => {
+        Commands::SendToggle {
+            index,
+            name,
+            sticky,
+        } => {
             let target = match (index, name) {
                 (Some(i), _) => WorkspaceReferenceArg::Index(i),
                 (_, Some(n)) => WorkspaceReferenceArg::Name(n),

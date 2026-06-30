@@ -1,14 +1,18 @@
-use crate::commands::reorder::update_auto_fit;
+use crate::Ctx;
 use crate::commands::reorder as reorder_mod;
+use crate::commands::reorder::update_auto_fit;
 use crate::niri::NiriClient;
 use crate::state::{SentWorkspace, save_state};
-use crate::Ctx;
 use anyhow::Result;
 use niri_ipc::{Action, WorkspaceReferenceArg};
 
 /// Automatically uses sticky mode when `sticky = true` in config,
 /// otherwise uses presence-based non-sticky mode.
-pub fn send_toggle<C: NiriClient>(ctx: &mut Ctx<C>, target: WorkspaceReferenceArg, sticky_flag: bool) -> Result<()> {
+pub fn send_toggle<C: NiriClient>(
+    ctx: &mut Ctx<C>,
+    target: WorkspaceReferenceArg,
+    sticky_flag: bool,
+) -> Result<()> {
     let sticky = sticky_flag || ctx.config.interaction.sticky;
     let windows = ctx.socket.get_windows()?;
     let active_ws = ctx.socket.get_active_workspace()?.id;
@@ -50,9 +54,21 @@ pub fn send_toggle<C: NiriClient>(ctx: &mut Ctx<C>, target: WorkspaceReferenceAr
             // Auto-fit will be handled naturally by reorder() on workspace transition
 
             let saved = match target_clone {
-                WorkspaceReferenceArg::Index(i) => SentWorkspace { index: Some(i), name: None, lock_sticky: true },
-                WorkspaceReferenceArg::Name(n) => SentWorkspace { index: None, name: Some(n), lock_sticky: true },
-                WorkspaceReferenceArg::Id(_) => SentWorkspace { index: None, name: None, lock_sticky: true },
+                WorkspaceReferenceArg::Index(i) => SentWorkspace {
+                    index: Some(i),
+                    name: None,
+                    lock_sticky: true,
+                },
+                WorkspaceReferenceArg::Name(n) => SentWorkspace {
+                    index: None,
+                    name: Some(n),
+                    lock_sticky: true,
+                },
+                WorkspaceReferenceArg::Id(_) => SentWorkspace {
+                    index: None,
+                    name: None,
+                    lock_sticky: true,
+                },
             };
             ctx.state.sent_workspace = Some(saved);
             save_state(&ctx.state, &ctx.cache_dir)?;

@@ -1,11 +1,14 @@
+use crate::Ctx;
 use crate::commands::reorder;
 use crate::niri::NiriClient;
 use crate::state::save_state;
-use crate::Ctx;
 use anyhow::Result;
 use niri_ipc::{Action, WorkspaceReferenceArg};
 
-pub fn recall<C: NiriClient>(ctx: &mut Ctx<C>, source: Option<WorkspaceReferenceArg>) -> Result<()> {
+pub fn recall<C: NiriClient>(
+    ctx: &mut Ctx<C>,
+    source: Option<WorkspaceReferenceArg>,
+) -> Result<()> {
     let active_ws = ctx.socket.get_active_workspace()?.id;
     let windows = ctx.socket.get_windows()?;
     let sidebar_ids: Vec<u64> = ctx.state.windows.iter().map(|w| w.id).collect();
@@ -17,9 +20,10 @@ pub fn recall<C: NiriClient>(ctx: &mut Ctx<C>, source: Option<WorkspaceReference
             WorkspaceReferenceArg::Index(idx) => {
                 workspaces.iter().find(|w| w.idx == *idx).map(|w| w.id)
             }
-            WorkspaceReferenceArg::Name(name) => {
-                workspaces.iter().find(|w| w.name.as_deref() == Some(name.as_str())).map(|w| w.id)
-            }
+            WorkspaceReferenceArg::Name(name) => workspaces
+                .iter()
+                .find(|w| w.name.as_deref() == Some(name.as_str()))
+                .map(|w| w.id),
             WorkspaceReferenceArg::Id(id) => Some(*id),
         }
     } else {
@@ -31,7 +35,7 @@ pub fn recall<C: NiriClient>(ctx: &mut Ctx<C>, source: Option<WorkspaceReference
         .filter(|w| sidebar_ids.contains(&w.id))
         .filter(|w| {
             w.workspace_id != Some(active_ws)
-                && source_ws.map_or(true, |sw| w.workspace_id == Some(sw))
+                && source_ws.is_none_or(|sw| w.workspace_id == Some(sw))
         })
         .collect();
 

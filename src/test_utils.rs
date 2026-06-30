@@ -74,7 +74,14 @@ pub fn mock_window(
     workspace_id: u64,
     position: Option<(f64, f64)>,
 ) -> Window {
-    mock_window_with_size(id, is_focused, is_floating, workspace_id, position, (300, 200))
+    mock_window_with_size(
+        id,
+        is_focused,
+        is_floating,
+        workspace_id,
+        position,
+        (300, 200),
+    )
 }
 
 pub fn mock_window_with_size(
@@ -111,6 +118,7 @@ pub fn mock_config() -> Config {
             width: 300,
             height: 200,
             gap: 10,
+            gap_mode: Default::default(),
         },
         margins: Margins {
             top: 50,

@@ -23,9 +23,11 @@ pub enum SidebarPosition {
 /// - "right"/"left": which horizontal edge anchors (right edge aligns = overflow goes left/off-screen)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(Default)]
 pub enum Align {
     /// Top-right corner anchors. For Right sidebar: x uses config width (current behavior).
     /// For Left sidebar: right edge aligns (overflow goes left, off-screen).
+    #[default]
     TopRight,
     /// Top-left corner anchors. For Left sidebar: x uses config width (current behavior).
     /// For Right sidebar: left edge aligns (overflow goes right).
@@ -47,11 +49,6 @@ impl fmt::Display for Align {
     }
 }
 
-impl Default for Align {
-    fn default() -> Self {
-        Align::TopRight
-    }
-}
 
 impl Align {
     /// Whether the window's right edge (true) or left edge (false) anchors horizontally.
@@ -74,11 +71,23 @@ pub struct Config {
     pub window_rule: Vec<WindowRule>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[derive(Default)]
+pub enum GapMode {
+    Static,
+    #[default]
+    Dynamic,
+}
+
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Geometry {
     pub width: i32,
     pub height: i32,
     pub gap: i32,
+    #[serde(default)]
+    pub gap_mode: GapMode,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -184,14 +193,13 @@ pub fn load_config() -> Config {
     };
     path.push("config.toml");
 
-    if path.exists() {
-        if let Ok(content) = fs::read_to_string(&path) {
+    if path.exists()
+        && let Ok(content) = fs::read_to_string(&path) {
             match toml::from_str(&content) {
                 Ok(cfg) => return cfg,
                 Err(e) => eprintln!("Error parsing config.toml: {}. Using defaults.", e),
             }
         }
-    }
     Config::default()
 }
 
