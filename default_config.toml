@@ -1,0 +1,62 @@
+# niri-sidebar configuration
+
+[geometry]
+# Width of the sidebar in pixels
+width = 400
+# Height of the sidebar windows
+height = 335
+# Gap between windows in the stack
+gap = 10
+
+[margins]
+# Margins are default to 0 if left out
+# Space from the top of the screen
+top = 50
+# Space from the right edge of the screen
+right = 10
+# Space from the left edge of the screen
+left = 10
+# Space from the bottom of the screen
+bottom = 10 
+
+[interaction]
+# Where to put the sidebar, can be "left", "right", "top" or "bottom"
+# Defaults to "right"
+position = "right"
+# Width of windows when sidebar is hidden in pixels
+peek = 10
+# Width of window when sidebar is hidden but window is focused in pixels
+# set this equal to peek to disable this feature
+# set this equal to sidebar_width + offset_right to make focused windows "unhide"
+# Optional and defaults to peek if ommitted
+focus_peek = 50
+# Whether the sidebar should follow if you switch workspaces
+sticky = false
+# How sidebar windows align when actual size ≠ configured size
+# (e.g., apps with large min-width like QQ).
+# Options: "top-right" (default), "top-left", "bottom-right", "bottom-left"
+# - "right"/"left": which horizontal edge anchors → overflow goes opposite side
+# - "top"/"bottom": stacking direction (top→bottom vs bottom→top)
+#align = "top-right"
+# Automatically write niri layout struts for sidebar space reservation.
+# Useful for hide-mode: when sidebar is hidden with windows, applies a strut
+# so peeked windows don't get pushed by niri's 75px minimum-visible rule.
+# with_sidebar: strut value when sidebar is hidden with windows (px)
+# without_sidebar: strut value otherwise (px, defaults to 0)
+#[interaction.auto_fit]
+#with_sidebar = 60
+#without_sidebar = 0
+# When adding a window to sidebar (Mod+D), automatically defocus it
+# so the tiled workspace regains focus immediately.
+#auto_defocus = true
+
+# Example window rule
+# all fields are optional if not given a default from other configs will be used
+# [[window_rule]]
+# app_id = "firefox"  # if not set will match all app_id's
+# title = "^Picture-in-Picture$"  # if not set will match no matter the title
+# width = 700
+# height = 400
+# focus_peek = 710
+# peek = 10
+# auto_add = true  # defaults to false
