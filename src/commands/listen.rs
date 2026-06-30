@@ -75,10 +75,10 @@ fn handle_workspace_focus(ws_id: u64) -> Result<()> {
         return Ok(());
     }
     if ctx.config.interaction.sticky {
-        process_move(&mut ctx, ws_id)
-    } else {
-        Ok(())
+        process_move(&mut ctx, ws_id)?;
+        reorder(&mut ctx)?;
     }
+    Ok(())
 }
 
 fn handle_new_window(window: &Window) -> Result<()> {

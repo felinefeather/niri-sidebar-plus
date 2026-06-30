@@ -264,10 +264,23 @@ pub fn reorder<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
     let gap_mode = ctx.config.geometry.gap_mode;
     let mut current_stack_offset = 0;
 
+    // Fix niri IPC race: WindowFocusChanged fires but get_windows() may still report
+    // stale is_focused. Use get_active_window() as ground truth — if the focused window
+    // is not a sidebar window, force peek (not focus_peek) for ALL sidebar windows.
+    let active_focused = ctx.socket.get_active_window().ok();
+    let active_is_sidebar = active_focused
+        .as_ref()
+        .is_some_and(|w| sidebar_ids.contains(&w.id));
+    let force_peek = !active_is_sidebar
+        && all_windows
+            .iter()
+            .any(|w| w.is_focused && sidebar_ids.contains(&w.id));
+
     for window in sidebar_windows.iter() {
         let dims = resolve_dimensions(window, ctx);
         let (aw, ah) = window.layout.window_size;
-        let active_peek = if window.is_focused {
+        let focused = !force_peek && window.is_focused;
+        let active_peek = if focused {
             resolve_rule_focus_peek(
                 &ctx.config.window_rule,
                 window,
