@@ -6,7 +6,7 @@ A fork of [niri-sidebar](https://github.com/Vigintillionn/niri-sidebar) with ali
 
 ## What's New
 
-Three features not in upstream:
+Features not in upstream:
 
 ### `align` — Window Alignment
 Controls overflow direction when a window's actual size exceeds the configured width/height (e.g., applications with large `min-width`) to make it looks better.
@@ -42,15 +42,18 @@ When enabled, pressing `Mod+S` adds a window to the sidebar then immediately ret
 auto_defocus = true
 ```
 
-### `send` & `recall` — Force Workspace Transfer
+### `send`, `send-toggle` & `recall` — Workspace Transfer
 Forcibly move all sidebar windows to a target workspace, ignoring `sticky`.
 
 ```bash
-niri-sidebar send -i 3      # send to workspace index 3
-niri-sidebar send -n chat   # send to workspace named "chat"
-niri-sidebar send -t -i 3   # toggle mode: first press sends, second press recalls
-niri-sidebar recall         # bring all sidebar windows back to current workspace
+niri-sidebar send -i 3            # send to workspace index 3
+niri-sidebar send -n chat         # send to workspace named "chat"
+niri-sidebar send-toggle -i 3     # toggle: first press sends, second recalls
+niri-sidebar send-toggle -i 3 -l  # same, but disable sticky while away
+niri-sidebar recall               # bring all back to current workspace
 ```
+
+Bind `send-toggle` to a single key for push-to-talk style workspace dispatch.
 
 ## Installation
 
