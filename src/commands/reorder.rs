@@ -7,7 +7,6 @@ use anyhow::Result;
 use niri_ipc::{Action, PositionChange, Window, WorkspaceReferenceArg};
 use std::collections::HashSet;
 use std::fs;
-use std::io::Write;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -52,8 +51,7 @@ fn write_strut_file(
     if existing == content {
         return Ok(false);
     }
-    let mut f = fs::File::create(path)?;
-    f.write_all(content.as_bytes())?;
+    fs::write(path, &content)?;
     Ok(true)
 }
 
@@ -105,7 +103,7 @@ pub fn update_auto_fit<C: NiriClient>(ctx: &mut Ctx<C>) -> Result<()> {
         let has_windows_on_ws = windows.iter().any(|w| {
             w.is_floating && w.workspace_id == Some(current_ws) && sidebar_ids.contains(&w.id)
         });
-        let strut_active = has_windows_on_ws && ctx.state.is_hidden;
+        let strut_active = has_windows_on_ws;
         let strut_value = if strut_active {
             auto_fit.with_sidebar
         } else {
